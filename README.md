@@ -24,29 +24,6 @@
 - `openai` - LLMStrategy 需要（`pip install dbsdk[llm]`）
 - `pytest` - 测试框架（`pip install dbsdk[dev]`）
 
-## 模块组织
-
-项目采用模块化设计，核心模块按职责分离：
-
-- **`config.py`** (~250 行) - 配置管理
-  - `FieldPolicy` - 字段策略配置
-  - `BuilderConfig` - 构建器配置
-  - 支持从字典/文件动态加载配置
-
-- **`generators.py`** (~650 行) - 值生成器
-  - `SchemaResolver` - Schema 解析器（处理 $ref、allOf 等）
-  - `ValueGenerator` - 值生成器（对象、数组、基本类型）
-
-- **`combination_builder.py`** (~220 行) - 组合模式构建器
-  - `CombinationBuilder` - 组合测试数据生成
-  - 支持笛卡尔积、成对组合、正交数组等模式
-
-- **`builder.py`** (~150 行) - 核心入口
-  - `DataBuilder` - 主入口类
-  - 组合其他模块，提供统一 API
-
-**设计原则**：组合模式、单一职责、向后兼容。
-
 ## 快速开始
 
 ```python

@@ -24,29 +24,6 @@ A Python data generation framework based on the strategy pattern for generating 
 - `openai` - Required for LLMStrategy (`pip install dbsdk[llm]`)
 - `pytest` - Test framework (`pip install dbsdk[dev]`)
 
-## Module Organization
-
-The project adopts modular design with core modules separated by responsibility:
-
-- **`config.py`** (~250 lines) - Configuration Management
-  - `FieldPolicy` - Field policy configuration
-  - `BuilderConfig` - Builder configuration
-  - Supports dynamic configuration loading from dictionary/file
-
-- **`generators.py`** (~650 lines) - Value Generators
-  - `SchemaResolver` - Schema resolver (handles $ref, allOf, etc.)
-  - `ValueGenerator` - Value generator (objects, arrays, basic types)
-
-- **`combination_builder.py`** (~220 lines) - Combination Pattern Builder
-  - `CombinationBuilder` - Combination test data generator
-  - Supports Cartesian product, pairwise, orthogonal array, etc.
-
-- **`builder.py`** (~150 lines) - Core Entry Point
-  - `DataBuilder` - Main entry class
-  - Composes other modules to provide unified API
-
-**Design Principles**: Composition pattern, single responsibility, backward compatibility.
-
 ## Quick Start
 
 ```python
