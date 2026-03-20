@@ -460,7 +460,6 @@ pytest tests/openapi/test_integration.py -v
 
 ## 📖 相关文档
 
-- [AGENTS.md](AGENTS.md) - 项目架构和约定
 - [JSONSCHEMA.md](JSONSCHEMA.md) - JSON Schema 支持说明
 
 ## 🤝 集成优势

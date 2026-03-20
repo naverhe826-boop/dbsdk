@@ -662,10 +662,10 @@ DataBuilder(schema).config_from_dict({
 
 ## Related Documentation
 
-- [AGENTS.md](AGENTS.md) - Project architecture and conventions
-- [NEWBIE.md](NEWBIE.md) - Beginner's guide
-- [CLAUDE.md](CLAUDE.md) - Claude AI assisted development guide
+- [README.md](README.md) - 中文文档
 - [JSONSCHEMA.md](JSONSCHEMA.md) - JSON Schema support documentation
 - [OPENAPI.md](OPENAPI.md) - OpenAPI test data generation documentation
 - [examples/](examples/) - Example code directory (includes newly added OpenAPI strategy examples)
 - [tests/](tests/) - Test code directory
+
+![Architecture Design](design.png)

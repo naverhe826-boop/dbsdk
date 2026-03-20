@@ -662,11 +662,11 @@ DataBuilder(schema).config_from_dict({
 
 ## 相关文档
 
-- [AGENTS.md](AGENTS.md) - 项目架构和约定
-- [NEWBIE.md](NEWBIE.md) - 新手入门指南
-- [CLAUDE.md](CLAUDE.md) - Claude AI 辅助开发指南
+- [README_EN.md](README_EN.md) - English Documentation
 - [JSONSCHEMA.md](JSONSCHEMA.md) - JSON Schema 支持说明
 - [OPENAPI.md](OPENAPI.md) - OpenAPI 测试数据生成文档
 - [examples/](examples/) - 示例代码目录（包含新增的 OpenAPI 策略示例）
 - [tests/](tests/) - 测试代码目录
+
+![架构设计](design.png)
 
