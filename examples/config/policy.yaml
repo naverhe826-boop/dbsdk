@@ -1,0 +1,107 @@
+# dbsdk 字段策略配置文件示例
+# 支持 YAML 和 JSON 格式
+
+# 全局配置
+count: 3
+strict_mode: false
+null_probability: 0.0
+
+# 字段策略配置
+policies:
+  # 序列策略：订单ID
+  - path: "id"
+    strategy:
+      type: sequence
+      params:
+        start: 1001
+        step: 1
+        prefix: "ORD-"
+        padding: 6
+
+  # 序列策略：用户ID（支持环境变量）
+  - path: "user.id"
+    strategy:
+      type: sequence
+      params:
+        start: "${USER_ID_START:-1000}"
+        prefix: "U-"
+
+  # faker 策略：用户名
+  - path: "user.name"
+    strategy:
+      type: faker
+      params:
+        method: "name"
+
+  # faker 策略：电话号码
+  - path: "user.phone"
+    strategy:
+      type: faker
+      params:
+        method: "phone_number"
+
+  # 枚举策略：订单状态
+  - path: "status"
+    strategy:
+      type: enum
+      params:
+        values:
+          - pending
+          - paid
+          - shipped
+          - completed
+
+  # 枚举策略：订单类型
+  - path: "type"
+    strategy:
+      type: enum
+      values:
+        - standard
+        - express
+        - international
+
+  # 范围策略：订单金额
+  - path: "amount"
+    strategy:
+      type: range
+      params:
+        min: 100
+        max: 9999
+        is_float: false
+
+  # datetime 策略：创建时间
+  - path: "created_at"
+    strategy:
+      type: datetime
+      params:
+        format: "%Y-%m-%d %H:%M:%S"
+
+  # ref 策略：引用其他字段
+  - path: "updated_by"
+    strategy:
+      type: ref
+      params:
+        ref_path: "user.id"
+
+  # 简化写法示例（不使用 params 嵌套）
+  - path: "order_no"
+    strategy:
+      type: sequence
+      start: 1
+      prefix: "NO-"
+      padding: 8
+
+# 组合生成配置
+combinations:
+  - mode: cartesian
+    fields:
+      - status
+      - type
+
+# 后置过滤器配置
+post_filters:
+  - type: limit
+    max_count: 5
+  - type: tag_rows
+    tag_field: "_tag"
+    tag_value: "test_data"

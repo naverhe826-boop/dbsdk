@@ -1,0 +1,12 @@
+# 核心依赖
+faker>=15.0.0
+exrex>=0.11.0
+python-dotenv>=1.0.0
+pyyaml>=6.0.0
+idna>=3.4
+
+# 可选依赖：LLMStrategy
+openai>=1.0.0
+
+# 开发依赖
+pytest>=7.0.0
