@@ -126,6 +126,19 @@ class DataBuilder:
                 if "." not in remaining and "[" not in remaining:
                     return True
 
+        # 处理 *.field 匹配 field 和 xxx.field（任意层级的字段）
+        if pattern.startswith("*."):
+            field_name = pattern[2:]
+            # 精确匹配顶层字段
+            if path == field_name:
+                return True
+            # 匹配嵌套字段（支持任意层级）
+            if path.endswith("." + field_name):
+                return True
+            # 匹配数组元素字段
+            if "[" in path and path.split("[")[-1].endswith("]." + field_name):
+                return True
+
         # 处理 [*] 数组通配符
         if "[*]" in pattern:
             # 先转义全部特殊字符，再还原通配符部分

@@ -205,9 +205,107 @@ class TestUsernameStrategy:
         """测试首字符不是特殊字符"""
         for charset in ["alphanumeric_underscore", "alphanumeric_dot", "alphanumeric_dash"]:
             strategy = UsernameStrategy(charset=charset)
-            
+
             for _ in range(10):
                 username = strategy.generate(StrategyContext(field_path="", field_schema={}))
-                
+
                 # 首字符应该是字母或数字
                 assert username[0].isalnum()
+
+    # ========== 新增：姓名和昵称生成测试 ==========
+
+    def test_chinese_name_generation(self):
+        """测试中文姓名生成"""
+        strategy = UsernameStrategy(style="chinese_name")
+
+        for _ in range(20):
+            name = strategy.generate(StrategyContext(field_path="", field_schema={}))
+
+            # 验证是中文字符（常见姓名长度2-4字）
+            assert 2 <= len(name) <= 4
+            # 验证包含中文字符
+            assert any('\u4e00' <= c <= '\u9fff' for c in name)
+
+    def test_chinese_name_with_gender(self):
+        """测试中文姓名性别过滤"""
+        # 男性姓名
+        strategy_male = UsernameStrategy(style="chinese_name", gender="male")
+        for _ in range(10):
+            name = strategy_male.generate(StrategyContext(field_path="", field_schema={}))
+            assert 2 <= len(name) <= 4
+
+        # 女性姓名
+        strategy_female = UsernameStrategy(style="chinese_name", gender="female")
+        for _ in range(10):
+            name = strategy_female.generate(StrategyContext(field_path="", field_schema={}))
+            assert 2 <= len(name) <= 4
+
+    def test_english_name_generation(self):
+        """测试英文姓名生成"""
+        strategy = UsernameStrategy(style="english_name")
+
+        for _ in range(20):
+            name = strategy.generate(StrategyContext(field_path="", field_schema={}))
+
+            # 验证包含空格（名 姓格式）
+            assert " " in name
+            # 验证首字母大写
+            parts = name.split()
+            assert all(part[0].isupper() for part in parts)
+
+    def test_english_name_with_gender(self):
+        """测试英文姓名性别过滤"""
+        # 男性姓名
+        strategy_male = UsernameStrategy(style="english_name", gender="male")
+        for _ in range(10):
+            name = strategy_male.generate(StrategyContext(field_path="", field_schema={}))
+            assert " " in name
+
+        # 女性姓名
+        strategy_female = UsernameStrategy(style="english_name", gender="female")
+        for _ in range(10):
+            name = strategy_female.generate(StrategyContext(field_path="", field_schema={}))
+            assert " " in name
+
+    def test_nickname_generation(self):
+        """测试昵称生成（无后缀）"""
+        strategy = UsernameStrategy(style="nickname", suffix_type="none")
+
+        for _ in range(20):
+            name = strategy.generate(StrategyContext(field_path="", field_schema={}))
+
+            # 验证包含中文（小/老/阿前缀）
+            assert any('\u4e00' <= c <= '\u9fff' for c in name)
+
+    def test_nickname_with_number_suffix(self):
+        """测试昵称数字后缀"""
+        strategy = UsernameStrategy(style="nickname", suffix_type="number")
+
+        for _ in range(10):
+            name = strategy.generate(StrategyContext(field_path="", field_schema={}))
+            # 应包含中文和可选数字后缀
+            assert any('\u4e00' <= c <= '\u9fff' for c in name)
+
+    def test_nickname_with_char_suffix(self):
+        """测试昵称字母后缀"""
+        strategy = UsernameStrategy(style="nickname", suffix_type="char")
+
+        for _ in range(10):
+            name = strategy.generate(StrategyContext(field_path="", field_schema={}))
+            # 应包含中文和可选字母后缀
+            assert any('\u4e00' <= c <= '\u9fff' for c in name)
+
+    def test_invalid_style_parameter(self):
+        """测试无效 style 参数"""
+        with pytest.raises(StrategyError):
+            UsernameStrategy(style="invalid_style")
+
+    def test_invalid_gender_parameter(self):
+        """测试无效 gender 参数"""
+        with pytest.raises(StrategyError):
+            UsernameStrategy(style="chinese_name", gender="unknown")
+
+    def test_invalid_suffix_type_parameter(self):
+        """测试无效 suffix_type 参数"""
+        with pytest.raises(StrategyError):
+            UsernameStrategy(style="nickname", suffix_type="invalid")

@@ -22,6 +22,7 @@ from .value import (
     BankCardStrategy,
     PhoneStrategy,
     UsernameStrategy,
+    TokenStrategy,
 )
 
 # 结构策略
@@ -60,6 +61,7 @@ __all__ = [
     "BankCardStrategy",
     "PhoneStrategy",
     "UsernameStrategy",
+    "TokenStrategy",
     # 结构策略
     "ArrayCountStrategy",
     "PropertyCountStrategy",

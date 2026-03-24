@@ -115,7 +115,7 @@ data = builder.build(count=5)
 ```
 
 **Core Features**:
-- 20+ built-in strategies: fixed, enum, range, seq, faker, datetime, email, password, ipv4/ipv6, domain, url, mac, cidr, regex, etc.
+- 25+ built-in strategies: fixed, enum, range, seq, faker, datetime, email, password, ipv4/ipv6, domain, url, mac, cidr, regex, token, etc.
 - Combination generation: supports CARTESIAN, PAIRWISE, ORTHOGONAL, EQUIVALENCE, BOUNDARY, INVALID modes
 - Smart inference: automatically generates data based on schema's format, enum, pattern, and field name semantics
 - Dynamic configuration: supports loading configuration from dict/JSON/YAML files
@@ -320,7 +320,7 @@ Configuration Parameters:
 | `id_card(min_age, max_age, gender, region)` | ID card number generation, supports age range, gender, region code configuration |
 | `bank_card(bank, card_type)` | Bank card number generation, supports 15 mainstream bank BINs, Luhn algorithm verification |
 | `phone(carrier, number_type)` | Phone number generation, supports three major carriers and virtual carrier number segments |
-| `username(min_length, max_length, charset, reserved_words, allow_uppercase)` | Username generation, supports length, character set, reserved word filtering |
+| `username(style, gender, suffix_type, min_length, max_length, charset, reserved_words, allow_uppercase)` | Username generation, supports random/chinese_name/english_name/nickname |
 | `array_count(source)` | Control array element count |
 | `property_count(source)` | Control object property count |
 | `property_selection(properties)` | Control which properties object generates |

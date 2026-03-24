@@ -915,3 +915,389 @@ class TestFieldPoliciesStrategies:
             if req.request_body and "name" in req.request_body:
                 assert isinstance(req.request_body["name"], str)
                 assert len(req.request_body["name"]) == 10
+
+
+class TestPathParamsNameFieldStrategy:
+    """
+    测试路径参数中的 name 字段使用 username 策略
+    
+    Bug Fix: 路径参数必须符合 URI 规范，不允许空格
+    """
+    
+    def test_path_params_name_uses_username_strategy(self):
+        """
+        测试路径参数中的 name 字段使用 username 策略（无空格）
+        
+        Bug Fix: 路径参数不允许出现空格，必须符合 URI 规范
+        URI 允许的字符：A-Z a-z 0-9 - . _ ~ : / ? # [ ] @ ! $ & ' ( ) * + , ; =
+        """
+        openapi_doc = {
+            "openapi": "3.0.2",
+            "info": {"title": "Test API", "version": "1.0.0"},
+            "paths": {
+                "/users/{name}/profile": {
+                    "get": {
+                        "operationId": "get_user_profile",
+                        "parameters": [
+                            {
+                                "name": "name",
+                                "in": "path",
+                                "required": True,
+                                "schema": {"type": "string"}
+                            }
+                        ],
+                        "responses": {"200": {"description": "Success"}}
+                    }
+                }
+            }
+        }
+        
+        parser = OpenAPIParser.from_dict(openapi_doc)
+        document = parser.parse()
+        
+        # 配置 name 字段使用 faker("name") 策略
+        generator = RequestDataGenerator(
+            generation_mode="random",
+            count=10,
+            field_policies=[
+                {
+                    "path": "name",
+                    "strategy": {"type": "faker", "method": "name", "locale": "zh_CN"}
+                }
+            ]
+        )
+        
+        endpoint = document.get_endpoint_by_operation_id("get_user_profile")
+        requests = generator.generate_for_endpoint(endpoint)
+        
+        # 验证所有生成的请求中 name 字段无空格（符合 URI 规范）
+        for req in requests:
+            name_value = req.path_params.get("name")
+            assert name_value is not None
+            assert isinstance(name_value, str)
+            # 路径参数中不应包含空格
+            assert " " not in name_value, f"name 字段包含空格: {name_value}"
+            # 验证 resolved_path 中也不包含空格
+            assert " " not in req.get_url(), f"URL 包含空格: {req.get_url()}"
+    
+    def test_query_params_name_can_use_chinese(self):
+        """
+        测试查询参数中的 name 字段可以使用中文
+        
+        查询参数不受 URI 路径规范限制，可以使用中文名
+        """
+        openapi_doc = {
+            "openapi": "3.0.2",
+            "info": {"title": "Test API", "version": "1.0.0"},
+            "paths": {
+                "/users": {
+                    "get": {
+                        "operationId": "search_users",
+                        "parameters": [
+                            {
+                                "name": "name",
+                                "in": "query",
+                                "required": False,
+                                "schema": {"type": "string"}
+                            }
+                        ],
+                        "responses": {"200": {"description": "Success"}}
+                    }
+                }
+            }
+        }
+        
+        parser = OpenAPIParser.from_dict(openapi_doc)
+        document = parser.parse()
+        
+        # 配置 name 字段使用 faker("name") 策略
+        generator = RequestDataGenerator(
+            generation_mode="random",
+            count=10,
+            field_policies=[
+                {
+                    "path": "name",
+                    "strategy": {"type": "faker", "method": "name", "locale": "zh_CN"}
+                }
+            ]
+        )
+        
+        endpoint = document.get_endpoint_by_operation_id("search_users")
+        requests = generator.generate_for_endpoint(endpoint)
+        
+        # 验证查询参数中的 name 字段可以包含中文字符
+        chinese_count = 0
+        for req in requests:
+            name_value = req.query_params.get("name")
+            if name_value:
+                # 检查是否包含中文字符（Unicode 范围：\u4e00-\u9fff）
+                if any('\u4e00' <= char <= '\u9fff' for char in str(name_value)):
+                    chinese_count += 1
+        
+        # 至少有一些 name 包含中文（概率很高）
+        assert chinese_count > 0, "查询参数中的 name 字段应包含中文姓名"
+    
+    def test_path_params_with_custom_name_strategy(self):
+        """
+        测试路径参数中的 name 字段支持自定义策略
+        
+        如果用户明确指定了 username 策略，应优先使用用户配置
+        """
+        openapi_doc = {
+            "openapi": "3.0.2",
+            "info": {"title": "Test API", "version": "1.0.0"},
+            "paths": {
+                "/items/{item_name}/details": {
+                    "get": {
+                        "operationId": "get_item_details",
+                        "parameters": [
+                            {
+                                "name": "item_name",
+                                "in": "path",
+                                "required": True,
+                                "schema": {"type": "string"}
+                            }
+                        ],
+                        "responses": {"200": {"description": "Success"}}
+                    }
+                }
+            }
+        }
+        
+        parser = OpenAPIParser.from_dict(openapi_doc)
+        document = parser.parse()
+        
+        # 配置 item_name 字段使用 username 策略（自定义）
+        generator = RequestDataGenerator(
+            generation_mode="random",
+            count=5,
+            field_policies=[
+                {
+                    "path": "item_name",
+                    "strategy": {"type": "username", "mode": "random"}
+                }
+            ]
+        )
+        
+        endpoint = document.get_endpoint_by_operation_id("get_item_details")
+        requests = generator.generate_for_endpoint(endpoint)
+        
+        # 验证所有生成的请求中 item_name 字段无空格
+        for req in requests:
+            item_name = req.path_params.get("item_name")
+            assert item_name is not None
+            assert " " not in item_name, f"item_name 包含空格: {item_name}"
+
+
+class TestFieldPoliciesWithStrategyRegistry:
+    """
+    测试 StrategyRegistry.create() 支持所有策略类型
+    
+    Bug Fix: uuid 字段生成 null，因为 _create_strategy_from_config() 只支持 4 种策略
+    """
+    
+    def test_faker_strategy_with_uuid4(self):
+        """
+        测试 faker 策略生成 UUID（Bug Fix: uuid 字段生成 null）
+        
+        Bug Fix: _create_strategy_from_config() 只支持 fixed/range/enum/random_string，
+        faker 类型不被支持，返回 FixedStrategy(value=None)
+        """
+        openapi_doc = {
+            "openapi": "3.0.2",
+            "info": {"title": "Test API", "version": "1.0.0"},
+            "paths": {
+                "/resources": {
+                    "get": {
+                        "operationId": "list_resources",
+                        "parameters": [
+                            {
+                                "name": "uuid",
+                                "in": "query",
+                                "required": False,
+                                "schema": {"type": "string"}
+                            }
+                        ],
+                        "responses": {"200": {"description": "Success"}}
+                    }
+                }
+            }
+        }
+        
+        parser = OpenAPIParser.from_dict(openapi_doc)
+        document = parser.parse()
+        
+        # 配置 uuid 字段使用 faker("uuid4") 策略
+        generator = RequestDataGenerator(
+            generation_mode="random",
+            count=10,
+            field_policies=[
+                {
+                    "path": "uuid",
+                    "strategy": {"type": "faker", "method": "uuid4"}
+                }
+            ]
+        )
+        
+        endpoint = document.get_endpoint_by_operation_id("list_resources")
+        requests = generator.generate_for_endpoint(endpoint)
+        
+        # 验证所有生成的请求中 uuid 字段不为 null，且符合 UUID 格式
+        import re
+        uuid_pattern = re.compile(
+            r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+        )
+        
+        for req in requests:
+            uuid_value = req.query_params.get("uuid")
+            assert uuid_value is not None, "uuid 字段不应为 null"
+            assert uuid_pattern.match(uuid_value), f"uuid 格式不正确: {uuid_value}"
+    
+    def test_datetime_strategy_support(self):
+        """测试 datetime 策略支持"""
+        openapi_doc = {
+            "openapi": "3.0.2",
+            "info": {"title": "Test API", "version": "1.0.0"},
+            "paths": {
+                "/events": {
+                    "get": {
+                        "operationId": "list_events",
+                        "parameters": [
+                            {
+                                "name": "created_at",
+                                "in": "query",
+                                "required": False,
+                                "schema": {"type": "string", "format": "date-time"}
+                            }
+                        ],
+                        "responses": {"200": {"description": "Success"}}
+                    }
+                }
+            }
+        }
+        
+        parser = OpenAPIParser.from_dict(openapi_doc)
+        document = parser.parse()
+        
+        # 配置 created_at 字段使用 datetime 策略
+        generator = RequestDataGenerator(
+            generation_mode="random",
+            count=5,
+            field_policies=[
+                {
+                    "path": "created_at",
+                    "strategy": {"type": "datetime", "format": "%Y-%m-%d %H:%M:%S"}
+                }
+            ]
+        )
+        
+        endpoint = document.get_endpoint_by_operation_id("list_events")
+        requests = generator.generate_for_endpoint(endpoint)
+        
+        # 验证所有生成的请求中 created_at 字段符合指定格式
+        import re
+        datetime_pattern = re.compile(r'^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$')
+        
+        for req in requests:
+            created_at = req.query_params.get("created_at")
+            if created_at:  # 可选字段可能为 None
+                assert datetime_pattern.match(created_at), f"日期格式不正确: {created_at}"
+    
+    def test_ipv4_strategy_support(self):
+        """测试 ipv4 策略支持"""
+        openapi_doc = {
+            "openapi": "3.0.2",
+            "info": {"title": "Test API", "version": "1.0.0"},
+            "paths": {
+                "/servers": {
+                    "get": {
+                        "operationId": "list_servers",
+                        "parameters": [
+                            {
+                                "name": "ip",
+                                "in": "query",
+                                "required": False,
+                                "schema": {"type": "string"}
+                            }
+                        ],
+                        "responses": {"200": {"description": "Success"}}
+                    }
+                }
+            }
+        }
+        
+        parser = OpenAPIParser.from_dict(openapi_doc)
+        document = parser.parse()
+        
+        # 配置 ip 字段使用 ipv4 策略
+        generator = RequestDataGenerator(
+            generation_mode="random",
+            count=5,
+            field_policies=[
+                {
+                    "path": "ip",
+                    "strategy": {"type": "ipv4"}
+                }
+            ]
+        )
+        
+        endpoint = document.get_endpoint_by_operation_id("list_servers")
+        requests = generator.generate_for_endpoint(endpoint)
+        
+        # 验证所有生成的请求中 ip 字段符合 IPv4 格式
+        import re
+        ipv4_pattern = re.compile(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$')
+        
+        for req in requests:
+            ip_value = req.query_params.get("ip")
+            if ip_value:
+                assert ipv4_pattern.match(ip_value), f"IPv4 格式不正确: {ip_value}"
+    
+    def test_sequence_strategy_support(self):
+        """测试 sequence 策略支持"""
+        openapi_doc = {
+            "openapi": "3.0.2",
+            "info": {"title": "Test API", "version": "1.0.0"},
+            "paths": {
+                "/orders": {
+                    "get": {
+                        "operationId": "list_orders",
+                        "parameters": [
+                            {
+                                "name": "order_id",
+                                "in": "query",
+                                "required": False,
+                                "schema": {"type": "integer"}
+                            }
+                        ],
+                        "responses": {"200": {"description": "Success"}}
+                    }
+                }
+            }
+        }
+        
+        parser = OpenAPIParser.from_dict(openapi_doc)
+        document = parser.parse()
+        
+        # 配置 order_id 字段使用 sequence 策略
+        generator = RequestDataGenerator(
+            generation_mode="random",
+            count=5,
+            field_policies=[
+                {
+                    "path": "order_id",
+                    "strategy": {"type": "sequence", "start": 1001, "step": 1}
+                }
+            ]
+        )
+        
+        endpoint = document.get_endpoint_by_operation_id("list_orders")
+        requests = generator.generate_for_endpoint(endpoint)
+        
+        # 验证生成的 order_id 是递增的序列
+        order_ids = [req.query_params.get("order_id") for req in requests]
+        order_ids = [oid for oid in order_ids if oid is not None]  # 过滤 None
+        
+        # 验证序列递增
+        for i in range(1, len(order_ids)):
+            assert order_ids[i] > order_ids[i-1], f"序列不是递增的: {order_ids}"

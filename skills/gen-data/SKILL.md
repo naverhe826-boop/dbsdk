@@ -81,7 +81,7 @@ llm(config, prompt, json_output=False)  # LLM 生成（需 openai）
 id_card(min_age=18, max_age=65, gender="random", region=None)  # 身份证号
 bank_card(bank="random", card_type="debit")  # 银行卡号
 phone(carrier="random", number_type="normal")  # 手机号
-username(min_length=6, max_length=20, charset="alphanumeric_underscore", reserved_words=None, allow_uppercase=True)  # 用户名
+username(style="random", gender="random", suffix_type="random", min_length=6, max_length=20, charset="alphanumeric_underscore", reserved_words=None, allow_uppercase=True)  # 用户名
 ```
 
 ### 动态配置
@@ -189,6 +189,10 @@ tag_rows(tag_field="_tag", tag_value="test")
 | `bank_card`, `card_number` | `bank_card()` |
 | `phone`, `mobile`, `cellphone` | `phone()` |
 | `username`, `user_name`, `login_name` | `username()` |
+| `api_key`, `apikey`, `api-key` | `token(token_type="api_key")` |
+| `access_token` | `token(token_type="access")` |
+| `refresh_token` | `token(token_type="refresh")` |
+| `token`, `*_token` | `token(token_type="session")` |
 
 ### 第 4 级：type 兜底
 
@@ -307,6 +311,42 @@ username(min_length=8, max_length=16)  # 指定长度范围
 username(charset="alphanumeric")        # 仅字母数字
 username(reserved_words=["admin", "root"])  # 过滤保留字
 username(allow_uppercase=False)         # 不允许大写字母
+
+# 中文姓名
+username(style="chinese_name")          # 随机中文姓名
+username(style="chinese_name", gender="male")    # 男性姓名
+username(style="chinese_name", gender="female")  # 女性姓名
+
+# 英文姓名
+username(style="english_name")          # 随机英文姓名
+username(style="english_name", gender="male")    # 男性姓名
+username(style="english_name", gender="female")  # 女性姓名
+
+# 昵称
+username(style="nickname")              # 随机昵称（可能有后缀）
+username(style="nickname", suffix_type="none")    # 无后缀昵称
+username(style="nickname", suffix_type="number")  # 数字后缀
+username(style="nickname", suffix_type="char")    # 字母后缀
+```
+
+## token 快速参考
+
+```python
+# 认证令牌生成
+token()                              # 默认 session 类型，前缀 sess_
+token(token_type="api_key")          # API Key，无前缀，32位
+token(token_type="openai_key")       # OpenAI API Key，sk- 前缀，51字符
+token(token_type="jwt")              # JWT 令牌，三段式 Base64 编码
+token(token_type="bearer")           # Bearer 令牌，默认带 "Bearer " 前缀
+token(token_type="access")           # 访问令牌，前缀 acc_，32位
+token(token_type="refresh")          # 刷新令牌，前缀 ref_，64位
+
+# 自定义参数
+token(token_type="api_key", length=48)  # 自定义长度
+token(token_type="api_key", prefix="pk-")  # 自定义前缀
+token(token_type="bearer", include_prefix=False)  # 不包含前缀
+token(token_type="jwt", algorithm="RS256")  # JWT 算法
+token(token_type="api_key", charset="0123456789abcdef")  # 自定义字符集
 ```
 
 ## 联合类型（Union Type）快速参考

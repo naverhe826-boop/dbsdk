@@ -221,3 +221,38 @@ class TestGeneratedRequest:
         assert request_dict["operation_id"] == "create_user"
         assert request_dict["method"] == "post"
         assert request_dict["request_body"] == {"name": "test"}
+    
+    def test_to_dict_with_resolved_path(self):
+        """测试转换为字典包含 resolved_path 字段（Bug Fix: 路径参数实例化）"""
+        request = GeneratedRequest(
+            operation_id="get_user",
+            path="/users/{id}/posts/{post_id}",
+            method="get",
+            path_params={"id": "123", "post_id": "456"},
+            query_params={"fields": "title"},
+        )
+        
+        request_dict = request.to_dict()
+        
+        # 验证原始路径
+        assert request_dict["path"] == "/users/{id}/posts/{post_id}"
+        
+        # 验证实例化后的路径
+        assert request_dict["resolved_path"] == "/users/123/posts/456"
+        
+        # 验证路径参数也被保存
+        assert request_dict["path_params"] == {"id": "123", "post_id": "456"}
+    
+    def test_resolved_path_with_no_params(self):
+        """测试无路径参数时的 resolved_path"""
+        request = GeneratedRequest(
+            operation_id="list_users",
+            path="/users",
+            method="get",
+        )
+        
+        request_dict = request.to_dict()
+        
+        # 无参数时，resolved_path 等于原始 path
+        assert request_dict["path"] == "/users"
+        assert request_dict["resolved_path"] == "/users"

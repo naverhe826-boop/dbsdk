@@ -20,6 +20,7 @@ from .advanced import RefStrategy
 from .datetime import DateTimeStrategy
 from .advanced import ConcatStrategy
 from .string import PasswordStrategy
+from .string import TokenStrategy
 from ...exceptions import StrategyNotFoundError
 
 
@@ -93,6 +94,17 @@ PARAM_ALIASES = {
     "email": {
         "type": "email_type",
         "domain": "domains",
+    },
+    "username": {
+        "style": "style",
+        "gender": "gender",
+        "suffix_type": "suffix_type",
+        "min_len": "min_length",
+        "max_len": "max_length",
+    },
+    "token": {
+        "type": "token_type",  # token 策略的 type 参数映射到 token_type
+        "len": "length",
     },
     # 结构策略
     "property_count": {
@@ -290,6 +302,7 @@ StrategyRegistry.register("datetime", DateTimeStrategy)
 StrategyRegistry.register("concat", ConcatStrategy)
 StrategyRegistry.register("password", PasswordStrategy)
 StrategyRegistry.register("email", EmailFakerStrategy)
+StrategyRegistry.register("token", TokenStrategy)
 
 # 结构策略
 from ..structure import (

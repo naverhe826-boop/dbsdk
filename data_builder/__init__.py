@@ -37,6 +37,7 @@ from .strategies import (
     BankCardStrategy,
     PhoneStrategy,
     UsernameStrategy,
+    TokenStrategy,
 )
 from .exceptions import (
     DataBuilderError,
@@ -198,6 +199,17 @@ def email(email_type="random", locale="zh_CN", domains=None):
     return EmailFakerStrategy(email_type=email_type, locale=locale, domains=domains)
 
 
+def token(token_type="session", length=None, charset=None, prefix=None, include_prefix=None):
+    """认证令牌生成策略"""
+    return TokenStrategy(
+        token_type=token_type,
+        length=length,
+        charset=charset,
+        prefix=prefix,
+        include_prefix=include_prefix,
+    )
+
+
 def ipv4(ip_class="any", ip_address_type="unicast", ip_subnet_mask=None, ip_multicast_groups=None):
     """IPv4 地址生成策略"""
     from .strategies.value.network import IPv4Strategy
@@ -348,6 +360,7 @@ __all__ = [
     "BankCardStrategy",
     "PhoneStrategy",
     "UsernameStrategy",
+    "TokenStrategy",
     "ArrayCountStrategy",
     "SchemaAwareStrategy",
     "PropertyCountStrategy",
@@ -384,6 +397,7 @@ __all__ = [
     # 网络策略
     "concat",
     "email",
+    "token",
     "ipv4",
     "ipv6",
     "domain",

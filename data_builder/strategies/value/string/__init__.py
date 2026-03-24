@@ -6,6 +6,7 @@ from .id_card import IdCardStrategy
 from .bank_card import BankCardStrategy
 from .phone import PhoneStrategy
 from .username import UsernameStrategy
+from .token import TokenStrategy
 
 __all__ = [
     "RandomStringStrategy",
@@ -16,4 +17,5 @@ __all__ = [
     "BankCardStrategy",
     "PhoneStrategy",
     "UsernameStrategy",
+    "TokenStrategy",
 ]

@@ -446,6 +446,58 @@ for req in requests_data:
 - `examples/openapi/gen_openapi_response.py` - 响应数据 Mock 生成演示
 - `examples/openapi/openapi_field_policies.py` - **新增**：field_policies 策略使用示例（enum、range、random_string 等策略）
 
+### 新增示例：openapi_field_policies.py
+
+该示例展示如何在 OpenAPI 测试数据生成中使用多种策略类型：
+
+```python
+from data_builder.openapi import APITestDataManager
+
+manager = APITestDataManager(
+    openapi_document=openapi_doc,
+    generation_config={
+        "generation_mode": "random",
+        "count": 5,
+        "field_policies": [
+            # 1. enum 策略：限制字段值为预定义枚举值
+            {
+                "path": "status",
+                "strategy": {
+                    "type": "enum",
+                    "values": ["active", "inactive", "pending"]
+                }
+            },
+            # 2. range 策略：限制数值范围
+            {
+                "path": "price",
+                "strategy": {
+                    "type": "range",
+                    "min_val": 10.0,
+                    "max_val": 1000.0,
+                    "is_float": True,
+                    "precision": 2
+                }
+            },
+            # 3. random_string 策略：生成固定长度的随机字符串
+            {
+                "path": "order_id",
+                "strategy": {
+                    "type": "random_string",
+                    "length": 10
+                }
+            },
+            # 4. 混合策略：同时使用多种策略类型
+        ]
+    }
+)
+```
+
+包含的示例场景：
+- `example_enum_strategy()` - enum 策略覆盖字段
+- `example_range_strategy()` - range 策略生成数值  
+- `example_random_string_strategy()` - random_string 策略生成字符串
+- `example_mixed_strategies()` - 混合使用多种策略
+
 ## 🧪 测试
 
 运行测试：

@@ -236,6 +236,190 @@ def example_combined_config():
     print()
 
 
+def example_chinese_name():
+    """中文姓名示例"""
+    print("\n" + "=" * 60)
+    print("7. 中文姓名生成")
+    print("=" * 60)
+    
+    schema = {
+        "type": "object",
+        "properties": {
+            "name": {"type": "string"}
+        },
+        "required": ["name"]
+    }
+    
+    # 默认中文姓名
+    config_dict = {
+        "policies": [
+            {"path": "name", "strategy": {"type": "username", "params": {"style": "chinese_name"}}}
+        ]
+    }
+    
+    config = BuilderConfig.from_dict(config_dict)
+    builder = DataBuilder(schema, config)
+    data = builder.build(count=5)
+    
+    print("随机中文姓名：")
+    for i, item in enumerate(data, 1):
+        print(f"{i}. {item['name']}")
+    
+    # 指定性别
+    print("\n男性姓名：")
+    config_dict["policies"][0]["strategy"]["params"]["gender"] = "male"
+    config = BuilderConfig.from_dict(config_dict)
+    builder = DataBuilder(schema, config)
+    data = builder.build(count=5)
+    for i, item in enumerate(data, 1):
+        print(f"{i}. {item['name']}")
+    
+    print("\n女性姓名：")
+    config_dict["policies"][0]["strategy"]["params"]["gender"] = "female"
+    config = BuilderConfig.from_dict(config_dict)
+    builder = DataBuilder(schema, config)
+    data = builder.build(count=5)
+    for i, item in enumerate(data, 1):
+        print(f"{i}. {item['name']}")
+    
+    print()
+
+
+def example_english_name():
+    """英文姓名示例"""
+    print("\n" + "=" * 60)
+    print("8. 英文姓名生成")
+    print("=" * 60)
+    
+    schema = {
+        "type": "object",
+        "properties": {
+            "name": {"type": "string"}
+        },
+        "required": ["name"]
+    }
+    
+    # 默认英文姓名
+    config_dict = {
+        "policies": [
+            {"path": "name", "strategy": {"type": "username", "params": {"style": "english_name"}}}
+        ]
+    }
+    
+    config = BuilderConfig.from_dict(config_dict)
+    builder = DataBuilder(schema, config)
+    data = builder.build(count=5)
+    
+    print("随机英文姓名：")
+    for i, item in enumerate(data, 1):
+        print(f"{i}. {item['name']}")
+    
+    # 指定性别
+    print("\n男性姓名：")
+    config_dict["policies"][0]["strategy"]["params"]["gender"] = "male"
+    config = BuilderConfig.from_dict(config_dict)
+    builder = DataBuilder(schema, config)
+    data = builder.build(count=5)
+    for i, item in enumerate(data, 1):
+        print(f"{i}. {item['name']}")
+    
+    print("\n女性姓名：")
+    config_dict["policies"][0]["strategy"]["params"]["gender"] = "female"
+    config = BuilderConfig.from_dict(config_dict)
+    builder = DataBuilder(schema, config)
+    data = builder.build(count=5)
+    for i, item in enumerate(data, 1):
+        print(f"{i}. {item['name']}")
+    
+    print()
+
+
+def example_nickname():
+    """昵称示例"""
+    print("\n" + "=" * 60)
+    print("9. 中文昵称生成")
+    print("=" * 60)
+    
+    schema = {
+        "type": "object",
+        "properties": {
+            "nickname": {"type": "string"}
+        },
+        "required": ["nickname"]
+    }
+    
+    # 无后缀昵称
+    config_dict = {
+        "policies": [
+            {"path": "nickname", "strategy": {"type": "username", "params": {"style": "nickname", "suffix_type": "none"}}}
+        ]
+    }
+    
+    config = BuilderConfig.from_dict(config_dict)
+    builder = DataBuilder(schema, config)
+    data = builder.build(count=5)
+    
+    print("无后缀昵称：")
+    for i, item in enumerate(data, 1):
+        print(f"{i}. {item['nickname']}")
+    
+    # 数字后缀
+    print("\n数字后缀昵称：")
+    config_dict["policies"][0]["strategy"]["params"]["suffix_type"] = "number"
+    config = BuilderConfig.from_dict(config_dict)
+    builder = DataBuilder(schema, config)
+    data = builder.build(count=5)
+    for i, item in enumerate(data, 1):
+        print(f"{i}. {item['nickname']}")
+    
+    # 字母后缀
+    print("\n字母后缀昵称：")
+    config_dict["policies"][0]["strategy"]["params"]["suffix_type"] = "char"
+    config = BuilderConfig.from_dict(config_dict)
+    builder = DataBuilder(schema, config)
+    data = builder.build(count=5)
+    for i, item in enumerate(data, 1):
+        print(f"{i}. {item['nickname']}")
+    
+    print()
+
+
+def example_mixed_fields():
+    """混合字段示例"""
+    print("\n" + "=" * 60)
+    print("10. 混合字段：用户信息表")
+    print("=" * 60)
+    
+    schema = {
+        "type": "object",
+        "properties": {
+            "id": {"type": "integer"},
+            "username": {"type": "string"},
+            "real_name": {"type": "string"},
+            "english_name": {"type": "string"},
+            "nickname": {"type": "string"},
+        },
+        "required": ["id", "username", "real_name"]
+    }
+    
+    config_dict = {
+        "policies": [
+            {"path": "id", "strategy": {"type": "sequence", "params": {"start": 1001}}},
+            {"path": "username", "strategy": {"type": "username", "params": {"style": "random", "min_length": 8, "max_length": 12}}},
+            {"path": "real_name", "strategy": {"type": "username", "params": {"style": "chinese_name"}}},
+            {"path": "english_name", "strategy": {"type": "username", "params": {"style": "english_name"}}},
+            {"path": "nickname", "strategy": {"type": "username", "params": {"style": "nickname", "suffix_type": "number"}}},
+        ]
+    }
+    
+    config = BuilderConfig.from_dict(config_dict)
+    builder = DataBuilder(schema, config)
+    data = builder.build(count=5)
+    
+    print(json.dumps(data, ensure_ascii=False, indent=2))
+    print()
+
+
 if __name__ == "__main__":
     example_basics()
     example_length_range()
@@ -243,3 +427,7 @@ if __name__ == "__main__":
     example_no_uppercase()
     example_custom_reserved()
     example_combined_config()
+    example_chinese_name()
+    example_english_name()
+    example_nickname()
+    example_mixed_fields()

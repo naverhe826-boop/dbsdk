@@ -425,10 +425,16 @@ class GeneratedRequest:
         return f"{base_url}{url_path}" if base_url else url_path
     
     def to_dict(self) -> Dict[str, Any]:
-        """转换为字典"""
+        """转换为字典，包含实例化后的路径"""
+        # 实例化路径参数
+        resolved_path = self.path
+        for key, value in self.path_params.items():
+            resolved_path = resolved_path.replace(f"{{{key}}}", str(value))
+        
         return {
             "operation_id": self.operation_id,
             "path": self.path,
+            "resolved_path": resolved_path,  # 实例化后的路径
             "method": self.method.value,
             "path_params": self.path_params,
             "query_params": self.query_params,

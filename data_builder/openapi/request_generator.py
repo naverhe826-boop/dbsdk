@@ -127,6 +127,7 @@ class RequestDataGenerator:
             count,
             f"{endpoint.operation_id}_path",
             mode,
+            is_path_params=True,  # 路径参数标识
         )
         
         query_params_list = self._generate_params_data(
@@ -134,6 +135,7 @@ class RequestDataGenerator:
             count,
             f"{endpoint.operation_id}_query",
             mode,
+            is_path_params=False,
         )
         
         header_params_list = self._generate_params_data(
@@ -141,6 +143,7 @@ class RequestDataGenerator:
             count,
             f"{endpoint.operation_id}_header",
             mode,
+            is_path_params=False,
         )
         
         request_body_list = self._generate_request_body_data(
@@ -231,6 +234,7 @@ class RequestDataGenerator:
         count: int,
         context: str,
         mode: str,
+        is_path_params: bool = False,
     ) -> List[Dict[str, Any]]:
         """
         生成参数数据。
@@ -239,13 +243,14 @@ class RequestDataGenerator:
         :param count: 生成数量
         :param context: 上下文标识（用于日志）
         :param mode: 生成模式
+        :param is_path_params: 是否为路径参数（路径参数中的 name 字段使用英文）
         :return: 参数字典列表
         """
         if not schema or not schema.get("properties"):
             return [{}]
         
         # 构建 DataBuilder 配置
-        config = self._build_builder_config(schema, count, context, mode)
+        config = self._build_builder_config(schema, count, context, mode, is_path_params)
         
         # 创建 DataBuilder 并生成数据
         builder = DataBuilder(schema, config)
@@ -296,6 +301,7 @@ class RequestDataGenerator:
         count: int,
         context: str,
         mode: str,
+        is_path_params: bool = False,
     ) -> BuilderConfig:
         """
         构建 DataBuilder 配置。
@@ -306,15 +312,35 @@ class RequestDataGenerator:
         :param count: 生成数量
         :param context: 上下文标识
         :param mode: 生成模式（单个模式）
+        :param is_path_params: 是否为路径参数（路径参数中的 name 字段使用英文）
         :return: BuilderConfig 实例
         """
         policies = []
         
         # 应用用户自定义策略（覆盖自动推导）
         for policy_config in self.field_policies:
+            # 对于路径参数中的 name 字段，使用 username 策略（无空格，符合 URI 规范）
+            adjusted_config = policy_config.copy()
+            field_path = policy_config.get("path", "").lower()
+            
+            # 路径参数中的 name 字段使用 username 策略（生成无空格的用户名）
+            # 支持通配符路径：*.name, name, *_name, *.*_name
+            is_name_field = (
+                field_path == "name" or 
+                field_path.endswith(".name") or  # 匹配 *.name
+                field_path.endswith("_name") or 
+                field_path.endswith("._name")    # 匹配 *.*_name
+            )
+            
+            if is_path_params and is_name_field:
+                strategy = policy_config.get("strategy", {})
+                if strategy.get("type") == "faker" and strategy.get("method") == "name":
+                    # 替换为 username 策略，生成符合 URI 规范的用户名
+                    adjusted_config["strategy"] = {"type": "username", "mode": "random"}
+            
             policies.append(FieldPolicy(
-                path=policy_config["path"],
-                strategy=self._create_strategy_from_config(policy_config["strategy"]),
+                path=adjusted_config["path"],
+                strategy=self._create_strategy_from_config(adjusted_config["strategy"]),
             ))
         
         # 构建组合配置
@@ -387,46 +413,18 @@ class RequestDataGenerator:
         :param strategy_config: 策略配置字典
         :return: Strategy 实例
         """
-        from .. import (
-            EnumStrategy,
-            FixedStrategy,
-            RandomStringStrategy,
-            RangeStrategy,
-        )
+        from ..strategies import StrategyRegistry
         
-        strategy_type = strategy_config.get("type", "fixed")
+        strategy_type = strategy_config.get("type")
         
-        if strategy_type == "fixed":
-            value = strategy_config.get("value")
+        # 对于不支持的类型，使用 FixedStrategy
+        if not strategy_type or not StrategyRegistry.has(strategy_type):
+            from .. import FixedStrategy
+            value = strategy_config.get("value") if strategy_config else None
             return FixedStrategy(value=value)
         
-        elif strategy_type == "range":
-            # RangeStrategy: {"type": "range", "min_val": 0, "max_val": 100}
-            min_val = strategy_config.get("min_val") or strategy_config.get("min") or 0
-            max_val = strategy_config.get("max_val") or strategy_config.get("max") or 100
-            is_float = strategy_config.get("is_float", False)
-            precision = strategy_config.get("precision", 2)
-            return RangeStrategy(
-                min_val=min_val, 
-                max_val=max_val, 
-                is_float=is_float, 
-                precision=precision
-            )
-        
-        elif strategy_type == "enum":
-            # EnumStrategy: {"type": "enum", "values": ["a", "b", "c"]}
-            values = strategy_config.get("values", [])
-            return EnumStrategy(choices=values)
-        
-        elif strategy_type == "random_string":
-            # RandomStringStrategy: {"type": "random_string", "length": 10}
-            length = strategy_config.get("length", 8)
-            return RandomStringStrategy(length=length)
-        
-        else:
-            # 不支持的类型，使用默认值或固定值
-            value = strategy_config.get("value")
-            return FixedStrategy(value=value)
+        # 使用 StrategyRegistry 创建策略
+        return StrategyRegistry.create(strategy_config)
     
     def generate_for_document(
         self,

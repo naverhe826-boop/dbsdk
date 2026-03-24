@@ -15,6 +15,7 @@ from .string import IdCardStrategy
 from .string import BankCardStrategy
 from .string import PhoneStrategy
 from .string import UsernameStrategy
+from .string import TokenStrategy
 from .registry import StrategyRegistry
 
 __all__ = [
@@ -36,5 +37,6 @@ __all__ = [
     "BankCardStrategy",
     "PhoneStrategy",
     "UsernameStrategy",
+    "TokenStrategy",
     "StrategyRegistry",
 ]

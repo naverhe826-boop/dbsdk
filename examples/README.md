@@ -18,7 +18,8 @@ examples/
 │   ├── gen_id_card.py       # 身份证号策略
 │   ├── gen_bank_card.py     # 银行卡号策略
 │   ├── gen_phone.py         # 手机号策略
-│   └── gen_username.py      # 用户名策略
+│   ├── gen_username.py      # 用户名策略
+│   └── gen_token.py         # 认证令牌策略
 │
 ├── advanced/                 # 高级值策略示例
 │   ├── gen_concat.py        # 字段拼接策略
@@ -75,7 +76,8 @@ examples/
 `basic/gen_id_card.py` | id_card | ⭐ | 身份证号生成，支持年龄、性别、地区配置 |
 `basic/gen_bank_card.py` | bank_card | ⭐ | 银行卡号生成，支持主流银行BIN，Luhn校验 |
 `basic/gen_phone.py` | phone | ⭐ | 手机号生成，支持三大运营商和虚拟运营商 |
-`basic/gen_username.py` | username | ⭐ | 用户名生成，支持长度、字符集、保留字过滤 |
+`basic/gen_username.py` | username | ⭐ | 用户名生成，支持随机字符/中文姓名/英文姓名/昵称 |
+`basic/gen_token.py` | token | ⭐ | 认证令牌生成，支持 api_key/openai_key/jwt/bearer/session/access/refresh 类型 |
 
 ### 🔹 高级值策略（advanced/）
 
@@ -162,6 +164,7 @@ examples/
 - `basic/gen_bank_card.py` - 银行卡号生成
 - `basic/gen_phone.py` - 手机号生成
 - `basic/gen_username.py` - 用户名生成
+- `basic/gen_token.py` - 认证令牌生成
 - `config/policy.yaml` - 策略配置示例
 
 ### ⭐⭐ 进阶级（组合与配置）
@@ -196,10 +199,10 @@ examples/
 
 应用场景 | 推荐文件 |
 ---------- | ---------- |
-**用户数据生成** | `basic/gen_enum.py`, `basic/gen_email.py`, `basic/gen_password.py`, `basic/gen_id_card.py`, `basic/gen_bank_card.py`, `basic/gen_phone.py`, `basic/gen_username.py`, `advanced/gen_concat.py` |
+**用户数据生成** | `basic/gen_enum.py`, `basic/gen_email.py`, `basic/gen_password.py`, `basic/gen_id_card.py`, `basic/gen_bank_card.py`, `basic/gen_phone.py`, `basic/gen_username.py`, `basic/gen_token.py`, `advanced/gen_concat.py` |
 **时间相关数据** | `basic/gen_datetime.py` |
 **网络数据生成** | `basic/gen_network.py` (IP地址、域名、URL、MAC地址等) |
-**账户类数据生成** | `basic/gen_id_card.py`, `basic/gen_bank_card.py`, `basic/gen_phone.py`, `basic/gen_username.py` (身份证号、银行卡号、手机号、用户名) |
+**账户类数据生成** | `basic/gen_id_card.py`, `basic/gen_bank_card.py`, `basic/gen_phone.py`, `basic/gen_username.py`, `basic/gen_token.py` (身份证号、银行卡号、手机号、用户名/姓名/昵称、认证令牌) |
 **业务订单数据** | `integration/gen_order.py` |
 **测试用例生成** | `schema_features/gen_combination.py` (成对组合、边界值、等价类) |
 **格式验证数据** | `basic/gen_regex.py` |
@@ -271,6 +274,7 @@ python run_all.py --no-openapi
 `basic/gen_bank_card.py` | bank_card | 字段级 | ⭐ |
 `basic/gen_phone.py` | phone | 字段级 | ⭐ |
 `basic/gen_username.py` | username | 字段级 | ⭐ |
+`basic/gen_token.py` | token | 字段级 | ⭐ |
 `basic/gen_datetime.py` | datetime | 字段级 | ⭐⭐ |
 `basic/gen_regex.py` | regex | 字段级 | ⭐⭐ |
 `basic/gen_network.py` | ipv4/ipv6/domain/url/mac/cidr/ip_range | 字段级 | ⭐⭐ |

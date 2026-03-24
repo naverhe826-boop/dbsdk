@@ -115,7 +115,7 @@ data = builder.build(count=5)
 ```
 
 **核心特性**：
-- 20+ 内置策略：fixed、enum、range、seq、faker、datetime、email、password、ipv4/ipv6、domain、url、mac、cidr、regex 等
+- 25+ 内置策略：fixed、enum、range、seq、faker、datetime、email、password、ipv4/ipv6、domain、url、mac、cidr、regex、token 等
 - 组合生成：支持 CARTESIAN、PAIRWISE、ORTHOGONAL、EQUIVALENCE、BOUNDARY、INVALID 模式
 - 智能推导：自动根据 schema 的 format、enum、pattern、字段名语义生成数据
 - 动态配置：支持从 dict/JSON/YAML 文件加载配置
@@ -320,7 +320,7 @@ result = builder.build(count=10)
 | `id_card(min_age, max_age, gender, region)` | 身份证号生成，支持年龄范围、性别、地区码配置 |
 | `bank_card(bank, card_type)` | 银行卡号生成，支持15家主流银行BIN，自动Luhn校验 |
 | `phone(carrier, number_type)` | 手机号生成，支持三大运营商和虚拟运营商号段 |
-| `username(min_length, max_length, charset, reserved_words, allow_uppercase)` | 用户名生成，支持长度、字符集、保留字过滤 |
+| `username(style, gender, suffix_type, min_length, max_length, charset, reserved_words, allow_uppercase)` | 用户名生成，支持随机字符/中文姓名/英文姓名/昵称 |
 | `array_count(source)` | 控制数组元素数量 |
 | `property_count(source)` | 控制对象属性数量 |
 | `property_selection(properties)` | 控制对象生成哪些属性 |
