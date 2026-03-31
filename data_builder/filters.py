@@ -1,3 +1,4 @@
+import warnings
 from typing import Callable, Dict, List, Set, Tuple
 
 
@@ -24,7 +25,7 @@ def constraint_filter(predicate: Callable[[dict], bool]) -> Callable[[List[dict]
                 if bool(predicate(r)):
                     result.append(r)
             except Exception as e:
-                # 跳过 predicate 抛出异常的行
+                warnings.warn(f"constraint_filter: predicate 抛出异常，跳过该行: {e}")
                 continue
         return result
     return _filter
@@ -39,9 +40,7 @@ def limit(max_count: int) -> Callable[[List[dict]], List[dict]]:
 
 
 def tag_rows(tag_field: str = "_tag", tag_value: str = "") -> Callable[[List[dict]], List[dict]]:
-    """为每行添加标记字段（注意：此函数会修改原始数据）"""
+    """为每行添加标记字段（返回新列表，不修改原始数据）"""
     def _filter(rows: List[dict]) -> List[dict]:
-        for row in rows:
-            row[tag_field] = tag_value
-        return rows
+        return [{**row, tag_field: tag_value} for row in rows]
     return _filter

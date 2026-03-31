@@ -158,8 +158,10 @@ class CombinationBuilder:
             classes = strategy.equivalence_classes()
             if classes:
                 mid_idx = len(classes) // 2
-                normal[path] = classes[mid_idx][0]
-                continue
+                cls = classes[mid_idx]
+                if cls:
+                    normal[path] = cls[0]
+                    continue
             # 其次取边界值第一个
             bv = strategy.boundary_values()
             if bv:

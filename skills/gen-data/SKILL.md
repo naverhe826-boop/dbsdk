@@ -82,6 +82,7 @@ id_card(min_age=18, max_age=65, gender="random", region=None)  # 身份证号
 bank_card(bank="random", card_type="debit")  # 银行卡号
 phone(carrier="random", number_type="normal")  # 手机号
 username(style="random", gender="random", suffix_type="random", min_length=6, max_length=20, charset="alphanumeric_underscore", reserved_words=None, allow_uppercase=True)  # 用户名
+metric(metric_type="memory", data_mode="current", unit="mb", count=10, time_interval=60, total_range=None, rate_range=None, time_format="%Y-%m-%d %H:%M:%S", trend_mode="random", trend_field="used", trend_range=None, output_fields=None)  # 系统监控指标
 ```
 
 ### 动态配置
@@ -193,6 +194,11 @@ tag_rows(tag_field="_tag", tag_value="test")
 | `access_token` | `token(token_type="access")` |
 | `refresh_token` | `token(token_type="refresh")` |
 | `token`, `*_token` | `token(token_type="session")` |
+| `memory`, `mem` | `metric(metric_type="memory")` |
+| `swap` | `metric(metric_type="swap")` |
+| `disk`, `storage` | `metric(metric_type="disk")` |
+| `cpu` | `metric(metric_type="cpu")` |
+| `io`, `disk_io` | `metric(metric_type="io")` |
 
 ### 第 4 级：type 兜底
 
@@ -348,6 +354,62 @@ token(token_type="bearer", include_prefix=False)  # 不包含前缀
 token(token_type="jwt", algorithm="RS256")  # JWT 算法
 token(token_type="api_key", charset="0123456789abcdef")  # 自定义字符集
 ```
+
+## metric 快速参考
+
+```python
+# 系统监控指标生成
+metric()                                   # 默认内存指标，单点数据
+metric(metric_type="memory")               # 内存指标
+metric(metric_type="swap")                 # 交换分区指标
+metric(metric_type="disk")                 # 磁盘指标
+metric(metric_type="cpu")                  # CPU 指标
+metric(metric_type="io")                   # 磁盘IO指标
+
+# 数据模式
+metric(data_mode="current")                # 单点数据
+metric(data_mode="trend", count=10)        # 趋势数据，10个数据点
+
+# 单位配置
+metric(unit="byte")                        # 字节
+metric(unit="kb")                          # KB
+metric(unit="mb")                          # MB（默认）
+metric(unit="gb")                          # GB
+
+# 趋势模式
+metric(data_mode="trend", trend_mode="random")            # 随机波动（默认）
+metric(data_mode="trend", trend_mode="increase")          # 单调递增
+metric(data_mode="trend", trend_mode="decrease")          # 单调递减
+metric(data_mode="trend", trend_mode="stable")            # 保持稳定
+metric(data_mode="trend", trend_mode="increase_decrease") # 先增后减
+metric(data_mode="trend", trend_mode="decrease_increase") # 先减后增
+
+# 输出字段控制
+metric()                                   # 默认输出所有字段（total, used, free, usage）
+metric(output_fields=["total", "used"])    # 只输出指定字段
+metric(output_fields=["usage"])            # 只要使用率
+metric(data_mode="trend", output_fields=["total", "used", "timestamp"])  # 趋势数据包含时间戳
+
+# 自定义范围
+metric(metric_type="disk", total_range=(100*1024**3, 500*1024**3))  # 磁盘100-500GB
+metric(metric_type="cpu", total_range=(4, 16))                      # CPU 4-16核
+metric(metric_type="io", rate_range={"rate_size": (0, 100*1024**2), "rate_ops": (0, 5000)})  # IO速率范围
+
+# 趋势范围
+metric(data_mode="trend", trend_mode="increase", trend_field="usage", trend_range=(20.0, 80.0))  # 使用率从20%增加到80%
+```
+
+**容量指标输出字段**：
+- `total`: 总容量
+- `used`: 已使用容量
+- `free`: 空闲容量（自动计算：free = total - used）
+- `usage`: 使用率百分比
+- `timestamp`: 时间戳（趋势数据）
+
+**速率指标输出字段**：
+- `rate_size`: 字节速率
+- `rate_ops`: 操作速率
+- `timestamp`: 时间戳（趋势数据）
 
 ## 联合类型（Union Type）快速参考
 

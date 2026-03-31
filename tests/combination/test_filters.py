@@ -1,5 +1,6 @@
 """后置过滤器测试"""
 
+import pytest
 from data_builder.filters import deduplicate, constraint_filter, limit
 
 
@@ -43,14 +44,15 @@ class TestConstraintFilter:
         assert constraint_filter(lambda r: False)(rows) == []
 
     def test_predicate_exception_ignored(self):
-        """predicate 抛出异常的行应该被跳过 (BUG-024)"""
+        """predicate 抛出异常的行应该被跳过，并发出 warning (BUG-024)"""
         rows = [
             {"value": 1},
             {"value": "invalid"},  # 这会导致 predicate 抛出异常
             {"value": 2}
         ]
         filter_fn = constraint_filter(lambda row: row["value"] > 1)
-        result = filter_fn(rows)
+        with pytest.warns(UserWarning, match="constraint_filter"):
+            result = filter_fn(rows)
         # 第一行会被过滤掉，第二行抛出异常被跳过，第三行保留
         assert result == [{"value": 2}]
 

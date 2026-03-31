@@ -38,6 +38,7 @@ from .strategies import (
     PhoneStrategy,
     UsernameStrategy,
     TokenStrategy,
+    MetricStrategy,
 )
 from .exceptions import (
     DataBuilderError,
@@ -332,6 +333,41 @@ def username(
     )
 
 
+def metric(
+    metric_type: str = "memory",
+    data_mode: str = "current",
+    unit: str = "mb",
+    count: int = 10,
+    time_interval: int = 60,
+    total_range=None,
+    rate_range=None,
+    time_format: str = "%Y-%m-%d %H:%M:%S",
+):
+    """系统监控指标生成策略
+    
+    参数：
+        metric_type: 指标类型（memory/swap/disk/io）
+        data_mode: 数据模式（current/trend）
+        unit: 单位（byte/kb/mb/gb）
+        count: 趋势数据点数量
+        time_interval: 时间间隔（秒）
+        total_range: 容量范围（disk专用）
+        rate_range: 速率范围（io专用）
+        time_format: 时间戳格式
+    """
+    from .strategies.value.system import MetricStrategy
+    return MetricStrategy(
+        metric_type=metric_type,
+        data_mode=data_mode,
+        unit=unit,
+        count=count,
+        time_interval=time_interval,
+        total_range=total_range,
+        rate_range=rate_range,
+        time_format=time_format,
+    )
+
+
 __all__ = [
     # 核心类
     "DataBuilder",
@@ -361,6 +397,7 @@ __all__ = [
     "PhoneStrategy",
     "UsernameStrategy",
     "TokenStrategy",
+    "MetricStrategy",
     "ArrayCountStrategy",
     "SchemaAwareStrategy",
     "PropertyCountStrategy",
@@ -411,6 +448,7 @@ __all__ = [
     "bank_card",
     "phone",
     "username",
+    "metric",
     # 组合生成
     "CombinationMode",
     "CombinationSpec",

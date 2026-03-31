@@ -5,6 +5,14 @@
 ```text
 tests/
 ├── conftest.py               # 全局 fixtures
+├── core/                     # 核心模块测试
+│   ├── test_builder.py       # DataBuilder 测试（21个测试）
+│   ├── test_combination_builder.py  # CombinationBuilder 测试（24个测试）
+│   ├── test_combinations.py  # 数据类测试（20个测试）
+│   ├── test_generators.py    # SchemaResolver/ValueGenerator 测试（56个测试）
+│   ├── test_manager.py       # APITestDataManager 测试（41个测试）
+│   ├── test_models.py        # OpenAPI 数据模型测试（9个测试）
+│   └── test_parser.py        # OpenAPIParser 测试（22个测试）
 ├── primitive/                # 基本类型默认生成
 │   ├── test_primitive_types.py
 │   └── test_example_keyword.py
@@ -26,7 +34,9 @@ tests/
 │   ├── test_id_card.py       # 身份证号策略测试（12个测试）
 │   ├── test_bank_card.py     # 银行卡号策略测试（9个测试）
 │   ├── test_phone.py         # 手机号策略测试（9个测试）
-│   └── test_username.py      # 用户名策略测试（10个测试）
+│   ├── test_username.py      # 用户名策略测试（25个测试）
+│   ├── test_token_strategy.py # 认证令牌策略测试（33个测试）
+│   └── test_metric_strategy.py # 系统监控指标策略测试（80个测试）
 ├── composite/                # 复合结构测试
 │   ├── test_composite_types.py
 │   ├── test_array_count_integration.py
@@ -55,6 +65,11 @@ tests/
 │   ├── test_env_vars.py
 │   ├── test_param_aliases.py
 │   └── test_combinations_and_filters.py
+├── openapi/                  # OpenAPI 模块测试
+│   ├── test_converter.py     # Schema 转换器测试
+│   ├── test_integration.py   # 集成功能测试（40+个测试）
+│   ├── test_response_generator.py  # 响应生成器测试
+│   └── test_exceptions.py    # 异常处理测试
 └── utils/                    # 工具模块测试
     └── test_invalid_data.py  # InvalidDataGenerator 测试（14个测试）
 ```
@@ -70,6 +85,124 @@ tests/
 | `simple_string_schema` | 含 `name: string` 的单字段对象 |
 | `simple_int_schema` | 含 `age: integer [0, 100]` 的单字段对象 |
 | `nested_order_schema` | 含 `user` 对象和 `orders` 数组（2-5 项）的嵌套结构 |
+
+---
+
+## core/
+
+核心模块单元测试，包含 data_builder 核心类和 OpenAPI 核心组件的测试。
+
+### test_builder.py
+
+`DataBuilder` 核心类测试。
+
+| 测试类 | 覆盖场景 |
+| --- | --- |
+| `TestDataBuilderInit` | 初始化（仅 schema、schema+config、config_from_dict） |
+| `TestDataBuilderBuild` | build() 方法（单个对象、多个对象、count 覆盖、字段策略、组合模式） |
+| `TestFindStrategy` | _find_strategy() 方法（精确匹配、user.*、*.field、[*] 通配符、无匹配） |
+| `TestMatchPath` | _match_path() 方法（各种通配符模式） |
+| `TestDataBuilderEdgeCases` | 边界情况（空 schema、嵌套对象、数组、后置过滤器） |
+
+**测试数量**：21 个
+
+### test_combination_builder.py
+
+`CombinationBuilder` 组合构建器测试。
+
+| 测试类 | 覆盖场景 |
+| --- | --- |
+| `TestCombinationBuilderInit` | 初始化 |
+| `TestCombinationBuilderBuild` | build() 方法（笛卡尔积、成对组合、count 限制/扩展、无组合配置） |
+| `TestGroupFieldsByScope` | _group_fields_by_scope() 方法（显式字段、scope 分组） |
+| `TestMatchScope` | _match_scope() 方法（顶层字段、嵌套 scope） |
+| `TestCollectDomains` | _collect_domains() 方法（枚举策略、边界值） |
+| `TestCartesianMergeGroups` | _cartesian_merge_groups() 方法（单组、多组、空组） |
+| `TestDiscoverSchemaFields` | _discover_schema_fields() 方法（顶层字段、嵌套字段） |
+| `TestResolveFieldSchema` | _resolve_field_schema() 方法（顶层、嵌套、不存在字段） |
+
+**测试数量**：24 个
+
+### test_combinations.py
+
+数据类测试（CombinationMode、Constraint、CombinationSpec）。
+
+| 测试类 | 覆盖场景 |
+| --- | --- |
+| `TestCombinationMode` | 枚举值、枚举数量、从字符串创建 |
+| `TestConstraint` | 创建约束、默认描述、谓词执行 |
+| `TestCombinationSpec` | 默认值、指定模式/字段/scope/约束/强度/正常值、完整配置 |
+| `TestCombinationSpecUsage` | 实际使用场景（成对组合、正交组合、非法值模式、约束过滤） |
+| `TestCombinationSpecEdgeCases` | 边界情况（空列表、None 值、大量字段/约束、嵌套 scope） |
+
+**测试数量**：20 个
+
+### test_generators.py
+
+`SchemaResolver` 和 `ValueGenerator` 测试。
+
+| 测试类 | 覆盖场景 |
+| --- | --- |
+| `TestSchemaResolverInit` | 初始化 |
+| `TestSchemaResolverResolve` | resolve() 方法（简单 schema、$ref、allOf、if/then/else、not、循环引用） |
+| `TestSchemaResolverResolveRef` | _resolve_ref() 方法（definitions、components/schemas、无效格式、不存在路径） |
+| `TestSchemaResolverMergeSchemas` | _merge_schemas() 方法（properties、required、其他字段覆盖） |
+| `TestValueGeneratorInit` | 初始化 |
+| `TestValueGeneratorGenerateValue` | generate_value() 方法（简单对象、深度限制） |
+| `TestValueGeneratorGenerateObject` | _generate_object() 方法（必需字段、example、min/maxProperties、additionalProperties、patternProperties） |
+| `TestValueGeneratorGenerateArray` | _generate_array() 方法（简单数组、min/maxItems、uniqueItems、prefixItems、contains） |
+| `TestValueGeneratorGeneratePrimitive` | _generate_primitive() 方法（enum、const、default、examples、example、pattern、范围、倍数、布尔、null） |
+| `TestValueGeneratorValidateExample` | _validate_example() 方法（类型验证、enum、const、范围、字符串长度） |
+| `TestValueGeneratorCheckType` | _check_type() 方法（null、boolean、integer、number、string、array、object） |
+| `TestValueGeneratorMakeHashable` | _make_hashable() 方法（基本类型、字典、列表、嵌套结构） |
+
+**测试数量**：56 个
+
+### test_manager.py
+
+`APITestDataManager` API 测试数据管理器测试。
+
+| 测试类 | 覆盖场景 |
+| --- | --- |
+| `TestAPITestDataManagerInit` | 初始化（从文件、从字典、无效输入） |
+| `TestAPITestDataManagerConfig` | 配置方法（configure_generator、configure_response_generator） |
+| `TestAPITestDataManagerEndpoints` | 端点查询（全部、按标签、按 operationId、按 path+method） |
+| `TestAPITestDataManagerGenerateRequests` | 请求数据生成（单端点、按 path+method、按标签、全部） |
+| `TestAPITestDataManagerGenerateResponses` | 响应数据生成（单端点、按 path+method、按标签、全部） |
+| `TestAPITestDataManagerStorage` | 数据存储和检索 |
+| `TestAPITestDataManagerSaveLoad` | 保存和加载配置 |
+| `TestAPITestDataManagerSummary` | 摘要信息 |
+
+**测试数量**：41 个
+
+### test_models.py
+
+OpenAPI 数据模型测试。
+
+| 测试类 | 覆盖场景 |
+| --- | --- |
+| `TestOpenAPIParameter` | 创建参数、字符串位置转换为枚举、to_dict 转换 |
+| `TestOpenAPIRequestBody` | 创建请求体、获取 schema、获取 example |
+| `TestOpenAPIEndpoint` | 创建端点、按位置获取参数、获取必需参数、to_dict 转换 |
+| `TestGeneratedRequest` | 创建请求、构建 URL、to_dict 转换、resolved_path 实例化 |
+
+**测试数量**：9 个
+
+### test_parser.py
+
+`OpenAPIParser` 解析器测试。
+
+| 测试类 | 覆盖场景 |
+| --- | --- |
+| `TestOpenAPIParserInit` | 初始化和文档加载 |
+| `TestOpenAPIParserParse` | 文档解析（端点、参数、请求体、响应） |
+| `TestOpenAPIParserRef` | $ref 引用解析（包括循环引用） |
+| `TestOpenAPIParserHelpers` | 辅助方法 |
+| `TestOpenAPIParserEdgeCases` | 边界情况 |
+
+**测试数量**：22 个
+
+**core/ 目录总测试数**：193 个
 
 ---
 
@@ -240,6 +373,26 @@ JSON Schema `example` / `examples` 关键字支持，及与其他关键字的优
 | 测试类 | 覆盖场景 |
 | --- | --- |
 | `TestRenderPromptMissingPlaceholder` | 不存在的占位符抛 `KeyError`、合法占位符正常渲染、`{root_data[key]}` dict 访问、dict 中不存在 key 抛 `KeyError`、`{{literal}}` 转义保持原样 |
+
+### test_metric_strategy.py
+
+`MetricStrategy` 系统监控指标策略测试。
+
+| 测试类 | 覆盖场景 |
+| --- | --- |
+| `TestMetricStrategyInit` | 初始化（默认参数、有效指标类型、有效数据模式、有效单位、无效参数校验） |
+| `TestMetricStrategyGenerate` | 数据生成（内存/交换分区/磁盘/CPU 单点和趋势、自定义范围、不同单位） |
+| `TestMetricStrategyBoundaryValues` | 边界值生成（容量指标边界、速率指标边界） |
+| `TestMetricStrategyEquivalenceClasses` | 等价类生成（容量指标等价类、速率指标等价类） |
+| `TestMetricStrategyInvalidValues` | 非法值生成（容量指标非法值、速率指标非法值） |
+| `TestMetricStrategyTimestamps` | 时间戳生成（时间顺序、时间间隔） |
+| `TestMetricStrategyValues` | values() 方法返回 None |
+| `TestMetricStrategyRegistry` | 策略注册和工厂函数 |
+| `TestMetricStrategyTrendInit` | 趋势模式初始化（默认模式、有效趋势模式、有效趋势字段、无效参数校验） |
+| `TestMetricStrategyTrendModes` | 趋势模式生成（increase/decrease/stable/increase_decrease/decrease_increase、自定义范围、CPU 趋势） |
+| `TestMetricStrategyOutputFields` | 输出字段控制（默认字段、选择性输出、时间戳控制、单字段输出、参数验证、free 字段计算、趋势模式字段过滤） |
+
+**测试数量**：80 个
 
 ---
 
@@ -521,3 +674,53 @@ combinations 和 post_filters 从配置加载。
 | 测试类 | 覆盖场景 |
 | --- | --- |
 | `TestCombinationsAndFilters` | combinations 完整配置、post_filters 完整配置、完整配置组合 |
+
+---
+
+## openapi/
+
+OpenAPI 文档解析和测试数据生成功能测试。
+
+### test_converter.py
+
+SchemaConverter 转换器测试，包括 nullable 转换边界情况。
+
+| 测试类 | 覆盖场景 |
+| --- | --- |
+| `TestNullableConversion` | 简单类型 nullable、oneOf+nullable、anyOf+nullable、allOf+nullable |
+| `TestSchemaConverter` | example 转换、参数 schema 提取、enum 字段检测、边界字段检测 |
+
+### test_integration.py
+
+OpenAPI 解析器和生成器的集成功能测试。
+
+| 测试类 | 覆盖场景 |
+| --- | --- |
+| `TestOpenAPIParser` | 从字典解析、解析端点、解析 $ref 引用、解析真实文档 |
+| `TestSchemaConverter` | nullable 字段转换、example 字段转换、参数 schema 提取、enum/边界字段检测 |
+| `TestRequestDataGenerator` | 为端点生成数据、边界值模式生成、参数 example 使用、请求体 example 使用、schema example 使用、多模式 example 处理、field_policies 覆盖 example |
+| `TestAPITestDataManager` | 创建管理器、获取端点、按 path+method 获取端点、按 path+method 生成数据、生成和保存数据 |
+| `TestMultipleModes` | generation_mode 支持列表、多模式生成数据、去重功能、content_key 生成、summary 返回多模式、保存配置保留多模式 |
+| `TestFieldPoliciesStrategies` | enum 策略在 field_policies 中使用、range 策略使用、random_string 策略使用 |
+| `TestPathParamsNameFieldStrategy` | 路径参数 name 字段使用 username 策略（无空格，符合 URI 规范）、查询参数 name 可使用中文、路径参数支持自定义策略 |
+| `TestFieldPoliciesWithStrategyRegistry` | faker 策略生成 UUID（Bug Fix）、datetime 策略支持、ipv4 策略支持、sequence 策略支持 |
+
+### test_response_generator.py
+
+ResponseDataGenerator 响应数据生成器测试。
+
+| 测试类 | 覆盖场景 |
+| --- | --- |
+| `TestResponseDataGenerator` | 基本响应生成、多状态码生成、include_headers 配置、字段策略覆盖、ref_resolver 传递 |
+| `TestResponseWithExamples` | 完整示例使用、部分示例合并补全、无示例 schema 自动生成 |
+| `TestResponseDataModel` | GeneratedResponse 数据模型、to_dict 转换 |
+
+### test_exceptions.py
+
+OpenAPI 模块异常处理测试。
+
+| 测试类 | 覆盖场景 |
+| --- | --- |
+| `TestOpenAPIParseErrors` | 无效 OpenAPI 文档、缺失必需字段、无效版本 |
+| `TestEndpointNotFound` | operationId 不存在、path+method 不存在 |
+| `TestRefResolutionErrors` | $ref 引用不存在、循环引用检测 |

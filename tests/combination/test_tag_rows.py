@@ -27,8 +27,9 @@ class TestTagRows:
         result = tag_rows("_tag", "new")(rows)
         assert result[0]["_tag"] == "new"
 
-    def test_mutates_in_place(self):
-        """tag_rows 修改原始行"""
+    def test_does_not_mutate_in_place(self):
+        """tag_rows 返回新列表，不修改原始行"""
         rows = [{"a": 1}]
-        tag_rows("_tag", "x")(rows)
-        assert rows[0]["_tag"] == "x"
+        result = tag_rows("_tag", "x")(rows)
+        assert result[0]["_tag"] == "x"
+        assert "_tag" not in rows[0]

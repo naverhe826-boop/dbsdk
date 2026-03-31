@@ -21,6 +21,7 @@ from .datetime import DateTimeStrategy
 from .advanced import ConcatStrategy
 from .string import PasswordStrategy
 from .string import TokenStrategy
+from .system import MetricStrategy
 from ...exceptions import StrategyNotFoundError
 
 
@@ -106,6 +107,11 @@ PARAM_ALIASES = {
         "type": "token_type",  # token 策略的 type 参数映射到 token_type
         "len": "length",
     },
+    "metric": {
+        "type": "metric_type",    # metric 策略的 type 参数映射到 metric_type
+        "mode": "data_mode",      # mode 参数映射到 data_mode
+        "interval": "time_interval",  # interval 参数映射到 time_interval
+    },
     # 结构策略
     "property_count": {
         "count": "source",  # count 映射到 source
@@ -150,6 +156,11 @@ def _coerce_type(value: Any, target_type: Optional[str] = None) -> Any:
         if isinstance(value, dict):
             return value
         return {"value": value}
+    elif target_type == "tuple":
+        # 支持将列表转换为元组
+        if isinstance(value, (list, tuple)):
+            return tuple(value)
+        return (value,)
     return value
 
 
@@ -239,15 +250,36 @@ class StrategyRegistry:
                 anno = param_info.annotation
                 target_type = None
                 if anno != inspect.Parameter.empty:
-                    anno_str = str(anno)
-                    if "int" in anno_str:
-                        target_type = "int"
-                    elif "float" in anno_str:
-                        target_type = "float"
+                    anno_str = str(anno).lower()  # 转换为小写以便统一匹配
+                    # 检查顺序：优先检查最外层容器类型
+                    # Optional[Dict[...]] -> dict
+                    # Optional[List[...]] -> list
+                    # Optional[Tuple[...]] -> tuple
+                    # 使用索引位置判断最外层容器类型
+                    dict_pos = anno_str.find('dict')
+                    list_pos = anno_str.find('list')
+                    tuple_pos = anno_str.find('tuple')
+                    
+                    # 找到第一个出现的容器类型
+                    container_types = []
+                    if dict_pos >= 0:
+                        container_types.append(('dict', dict_pos))
+                    if list_pos >= 0:
+                        container_types.append(('list', list_pos))
+                    if tuple_pos >= 0:
+                        container_types.append(('tuple', tuple_pos))
+                    
+                    # 按位置排序，选择第一个（最外层的）
+                    if container_types:
+                        container_types.sort(key=lambda x: x[1])
+                        target_type = container_types[0][0]
+                    # 如果没有容器类型，检查基本类型
                     elif "bool" in anno_str:
                         target_type = "bool"
-                    elif "list" in anno_str:
-                        target_type = "list"
+                    elif "float" in anno_str:
+                        target_type = "float"
+                    elif "int" in anno_str:
+                        target_type = "int"
                 resolved_params[key] = _coerce_type(value, target_type)
 
         return strategy_class(**resolved_params)
@@ -346,6 +378,9 @@ StrategyRegistry.register("id_card", IdCardStrategy)
 StrategyRegistry.register("bank_card", BankCardStrategy)
 StrategyRegistry.register("phone", PhoneStrategy)
 StrategyRegistry.register("username", UsernameStrategy)
+
+# 系统监控指标策略
+StrategyRegistry.register("metric", MetricStrategy)
 
 # 保存内置策略快照（用于测试隔离）
 StrategyRegistry._builtin_strategies = dict(StrategyRegistry._strategies)

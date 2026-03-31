@@ -8,18 +8,27 @@ import random
 import re
 import string
 import warnings
-from typing import Any, Dict, List, Optional, Set, TYPE_CHECKING
+from typing import Any, Optional, Set, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .builder import DataBuilder
 
+# 模块级 Faker 单例，避免在 _generate_default_string 中每次实例化
+_faker_instance = None
+
+
+def _get_faker():
+    global _faker_instance
+    if _faker_instance is None:
+        from faker import Faker
+        _faker_instance = Faker()
+    return _faker_instance
+
 from .exceptions import SchemaError
 from .strategies.basic import Strategy, StrategyContext, StructureStrategy
 from .strategies.structure import (
-    SchemaAwareStrategy,
     PropertyCountStrategy,
     PropertySelectionStrategy,
-    ContainsCountStrategy,
     SchemaSelectionStrategy,
 )
 
@@ -215,9 +224,10 @@ class ValueGenerator:
             return self._generate_value_inner(schema, path, root_data, parent_data, index, depth)
         finally:
             # 弹栈：确保在异常情况下也能正确清理
-            if ref_path_to_pop is not None:
-                if self.builder._generation_ref_stack and self.builder._generation_ref_stack[-1] == ref_path_to_pop:
-                    self.builder._generation_ref_stack.pop()
+            # 无条件弹出：我们一定 push 了 ref_path_to_pop，直接 pop 即可
+            # 不做 stack[-1] == ref_path_to_pop 的条件检查，避免内层异常导致栈残留时跳过本层 pop
+            if ref_path_to_pop is not None and self.builder._generation_ref_stack:
+                self.builder._generation_ref_stack.pop()
 
     def _generate_value_inner(
         self,
@@ -300,14 +310,22 @@ class ValueGenerator:
         # 从 schema 推导类型
         schema_type = schema.get("type")
         if schema_type is None:
-            # 从 enum/const 推导类型
+            # Python type name → JSON Schema type name
+            _TYPE_MAP = {
+                'int': 'integer', 'float': 'number', 'str': 'string',
+                'bool': 'boolean', 'NoneType': 'null', 'list': 'array', 'dict': 'object',
+            }
             if "enum" in schema and schema["enum"]:
-                first_value = schema["enum"][0]
-                schema_type = type(first_value).__name__
+                schema_type = _TYPE_MAP.get(type(schema["enum"][0]).__name__, 'string')
             elif "const" in schema:
-                schema_type = type(schema["const"]).__name__
+                schema_type = _TYPE_MAP.get(type(schema["const"]).__name__, 'string')
+            elif any(k in schema for k in ("minLength", "maxLength", "pattern", "format")):
+                schema_type = "string"
+            elif any(k in schema for k in ("minimum", "maximum", "exclusiveMinimum", "exclusiveMaximum", "multipleOf")):
+                schema_type = "number"
+            elif any(k in schema for k in ("minItems", "maxItems", "items", "prefixItems", "uniqueItems")):
+                schema_type = "array"
             else:
-                # 默认为 object
                 schema_type = "object"
 
         # 联合类型：type 为数组时，如 ["string", "null"]
@@ -511,11 +529,16 @@ class ValueGenerator:
                         if pn_pattern:
                             import exrex
                             key = exrex.getone(pn_pattern)
-                            # 避免重复键名
                             retry = 0
                             while key in result and retry < 10:
                                 key = exrex.getone(pn_pattern)
                                 retry += 1
+                            if key in result:
+                                # 10 次重试后仍重复，跳过本次生成
+                                warnings.warn(
+                                    f"propertyNames.pattern='{pn_pattern}' 重试 10 次仍生成重复键，跳过"
+                                )
+                                continue
                         else:
                             key = f"prop_{i}"
                         prop_path = f"{path}.{key}" if path else key
@@ -602,7 +625,6 @@ class ValueGenerator:
     ) -> list:
         """生成数组"""
         from .strategies.structure.contains_count import ContainsCountStrategy
-        from .strategies.structure.array_count import ArrayCountStrategy
 
         items_schema = schema.get("items", {"type": "string"})
         prefix_items = schema.get("prefixItems", [])
@@ -786,7 +808,7 @@ class ValueGenerator:
             if self._validate_example(schema, example):
                 return example
             # 如果不符合约束，记录警告但仍使用（向后兼容）
-            warnings.warn(f"example 值可能不符合 schema 约束: {example}")
+            warnings.warn(f"字段 '{path}': example 值可能不符合 schema 约束: {example!r}")
             return example
 
         if schema_type == "string":
@@ -886,8 +908,7 @@ class ValueGenerator:
         # 检查 format
         fmt = schema.get("format")
         if fmt:
-            from faker import Faker
-            _faker = Faker()
+            _faker = _get_faker()
             FORMAT_GENERATORS = {
                 "email": lambda: _faker.email(),
                 "uri": lambda: _faker.uri(),
@@ -935,9 +956,23 @@ class ValueGenerator:
         maximum = schema.get("maximum", 100)
 
         if "exclusiveMinimum" in schema:
-            minimum = schema["exclusiveMinimum"] + 1
+            em = schema["exclusiveMinimum"]
+            if isinstance(em, bool):
+                # Draft 4/6: exclusiveMinimum 是布尔值，与 minimum 配合使用
+                if em:
+                    minimum = schema.get("minimum", minimum) + 1
+            else:
+                # Draft 7+: exclusiveMinimum 直接是下界数值
+                minimum = em + 1
         if "exclusiveMaximum" in schema:
-            maximum = schema["exclusiveMaximum"] - 1
+            ex = schema["exclusiveMaximum"]
+            if isinstance(ex, bool):
+                # Draft 4/6: exclusiveMaximum 是布尔值，与 maximum 配合使用
+                if ex:
+                    maximum = schema.get("maximum", maximum) - 1
+            else:
+                # Draft 7+: exclusiveMaximum 直接是上界数值
+                maximum = ex - 1
 
         minimum, maximum = int(minimum), int(maximum)
 
@@ -961,9 +996,19 @@ class ValueGenerator:
         maximum = schema.get("maximum", 100.0)
 
         if "exclusiveMinimum" in schema:
-            minimum = schema["exclusiveMinimum"] + 1e-9
+            em = schema["exclusiveMinimum"]
+            if isinstance(em, bool):
+                if em:
+                    minimum = schema.get("minimum", minimum) + 1e-9
+            else:
+                minimum = em + 1e-9
         if "exclusiveMaximum" in schema:
-            maximum = schema["exclusiveMaximum"] - 1e-9
+            ex = schema["exclusiveMaximum"]
+            if isinstance(ex, bool):
+                if ex:
+                    maximum = schema.get("maximum", maximum) - 1e-9
+            else:
+                maximum = ex - 1e-9
 
         if "multipleOf" in schema:
             step = schema["multipleOf"]

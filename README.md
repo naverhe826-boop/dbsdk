@@ -115,7 +115,7 @@ data = builder.build(count=5)
 ```
 
 **核心特性**：
-- 25+ 内置策略：fixed、enum、range、seq、faker、datetime、email、password、ipv4/ipv6、domain、url、mac、cidr、regex、token 等
+- 26+ 内置策略：fixed、enum、range、seq、faker、datetime、email、password、ipv4/ipv6、domain、url、mac、cidr、regex、token、metric 等
 - 组合生成：支持 CARTESIAN、PAIRWISE、ORTHOGONAL、EQUIVALENCE、BOUNDARY、INVALID 模式
 - 智能推导：自动根据 schema 的 format、enum、pattern、字段名语义生成数据
 - 动态配置：支持从 dict/JSON/YAML 文件加载配置
